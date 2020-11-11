@@ -336,25 +336,22 @@ class DDXIngester(MetanormIngester):
         namespaces = {'default': self._get_xml_namespace(root)}
         extracted_attributes = {}
         x_path_global = "./default:Attribute[@name='NC_GLOBAL']/default:Attribute"
-        x_path_specific = "./default:Grid/default:Attribute[@name='standard_name']"
         # finding the global metadata
         for attribute in root.findall(x_path_global, namespaces):
             extracted_attributes[attribute.get('name')] = attribute.find(
                 "./default:value", namespaces).text
+
         # finding the parameters of the dataset that are declared in
         # the online source (specific metadata)
         # The specific ones are stored in 'raw_dataset_parameters' part of
         # the returned dictionary("extracted_attributes")
+        elements = root.findall("./*", namespaces)
         extracted_attributes['raw_dataset_parameters'] = list()
-        for attribute in root.findall(x_path_specific, namespaces):
-            extracted_attributes['raw_dataset_parameters'].append(
-                attribute.find("./default:value", namespaces).text)
-        # removing the "latitude" and "longitude" from
-        # the 'raw_dataset_parameters' part of the dictionary
-        if 'latitude' in extracted_attributes['raw_dataset_parameters']:
-            extracted_attributes['raw_dataset_parameters'].remove('latitude')
-        if 'longitude' in extracted_attributes['raw_dataset_parameters']:
-            extracted_attributes['raw_dataset_parameters'].remove('longitude')
+        for element in elements:
+            element_name = element.attrib.get('name')
+            if element_name and element_name != 'NC_GLOBAL':
+                extracted_attributes['raw_dataset_parameters'].append(element_name)
+
         return extracted_attributes
 
     @classmethod

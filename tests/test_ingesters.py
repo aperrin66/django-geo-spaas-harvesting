@@ -400,7 +400,7 @@ class DDXIngesterTestCase(django.test.TestCase):
             ingester._extract_attributes(root),
             {
                 'Conventions': 'CF-1.7, ACDD-1.3',
-                'raw_dataset_parameters': [],
+                'raw_dataset_parameters': ['lat'],
                 'title': 'VIIRS L2P Sea Surface Skin Temperature'
             }
         )
