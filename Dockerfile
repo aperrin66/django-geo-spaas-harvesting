@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nansencenter/geospaas:latest-slim
+ARG BASE_IMAGE=aperrin66/geospaas:0.0.1-slim
 
 FROM ${BASE_IMAGE} as base
 
