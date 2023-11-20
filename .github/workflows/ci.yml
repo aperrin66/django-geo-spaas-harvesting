@@ -10,8 +10,6 @@ jobs:
     strategy:
       matrix:
         image_name: ["${{ vars.DOCKER_ORG }}/geospaas_harvesting"]
-        tag_suffix:
-          - '-slim'
         version:
           - {'python': '3.7', 'latest': false}
           - {'python': '3.8', 'latest': false}
@@ -20,13 +18,14 @@ jobs:
           - {'python': '3.11', 'latest': true}
     uses: ./.github/workflows/test_and_docker_build.yml
     with:
-      base_image: "${{ vars.DOCKER_ORG }}/geospaas:0.0.2${{ matrix.tag_suffix }}-python${{ matrix.version.python }}"
+      base_image: "${{ vars.DOCKER_ORG }}/geospaas:0.0.2-slim-python${{ matrix.version.python }}"
       push_coverage: ${{ matrix.version.latest }}
       metanorm_version: '4.1.0'
       target_image_tags: |
-        ${{ matrix.image_name }}:${{ github.ref_name }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
-        ${{ matrix.image_name }}:latest${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
-        ${{ matrix.version.latest && format('{0}:latest{1}', matrix.image_name, matrix.tag_suffix) || '' }}
+        ${{ matrix.image_name }}:${{ github.ref_name }}-python${{ matrix.version.python }}
+        ${{ matrix.version.latest && format('{0}:{1}', matrix.image_name, github.ref_name) || '' }}
+        ${{ matrix.image_name }}:latest-python${{ matrix.version.python }}
+        ${{ matrix.version.latest && format('{0}:latest', matrix.image_name) || '' }}
     secrets: inherit
 
   publish_python_package:
