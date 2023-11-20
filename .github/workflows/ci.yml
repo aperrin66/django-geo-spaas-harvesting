@@ -1,0 +1,59 @@
+---
+name: "Unit tests and docker image build"
+on:
+  push:
+    branches: ['**']
+  release:
+    types: [prereleased, released]
+jobs:
+  tests_and_docker_builds:
+    strategy:
+      matrix:
+        image_name: ["${{ vars.DOCKER_ORG }}/geospaas_harvesting"]
+        tag_suffix:
+          - '-slim'
+        version:
+          - {'python': '3.7', 'latest': false}
+          - {'python': '3.8', 'latest': false}
+          - {'python': '3.9', 'latest': false}
+          - {'python': '3.10', 'latest': false}
+          - {'python': '3.11', 'latest': true}
+    uses: ./.github/workflows/test_and_docker_build.yml
+    with:
+      base_image: "${{ vars.DOCKER_ORG }}/geospaas:0.0.2${{ matrix.tag_suffix }}-python${{ matrix.version.python }}"
+      push_coverage: ${{ matrix.version.latest }}
+      metanorm_version: '4.1.0'
+      target_image_tags: |
+        ${{ matrix.image_name }}:${{ github.ref_name }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
+        ${{ matrix.image_name }}:latest${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
+        ${{ matrix.version.latest && format('{0}:latest{1}', matrix.image_name, matrix.tag_suffix) || '' }}
+    secrets: inherit
+
+  publish_python_package:
+    name: Build Python package and publish it as a release artifact
+    runs-on: 'ubuntu-20.04'
+    needs: 'tests_and_docker_builds'
+    if: ${{ github.event_name == 'release' }}
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v2
+
+      - name: 'Build Python package'
+        run: >
+             docker run --rm
+             -v "$(pwd):/src"
+             -e "GEOSPAAS_HARVESTING_RELEASE=${{ github.ref_name }}"
+             "${{ vars.DOCKER_ORG }}/geospaas:latest-slim-python3.11"
+             python setup.py sdist bdist_wheel
+
+      - name: 'Deploy package to the Github release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: 'dist/*'
+          file_glob: true
+          tag: ${{ github.ref }}
+...
